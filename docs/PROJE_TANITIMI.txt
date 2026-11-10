@@ -1,0 +1,63 @@
+# TaskFlow - Proje Tanıtımı
+
+## Amaç ve senaryo
+
+TaskFlow, bir yazılım ekibinin görevlerini ve çalışanların sorumluluklarını takip
+etmek için geliştirilmiş bir REST API'dir. Ekip, yapılacak işleri sisteme kaydeder,
+çalışanlara atar, önceliklendirir ve durumlarını günceller. Böylece bir görevin
+kimin sorumluluğunda olduğu ve hangi aşamada bulunduğu izlenebilir.
+
+Örneğin ekip lideri "Giriş API'sini geliştir" başlıklı bir görev oluşturur,
+önceliğini `high` olarak belirler ve Ayşe'ye atar. Ayşe çalışmaya başladığında
+durumu `in_progress`, iş tamamlandığında `completed` olarak günceller.
+
+## Temel sistem özellikleri
+
+- Yeni görev oluşturma.
+- Tüm görevleri listeleme ve tek bir görevin detayını görüntüleme.
+- Başlık, açıklama, sorumlu kişi, durum ve öncelik bilgilerini güncelleme.
+- Görev silme.
+- Gelen HTTP isteklerinin metodunu, adresini ve zamanını konsola kaydetme.
+- JSON dosyasıyla görevleri sunucu yeniden başlatıldığında koruma.
+- Geçersiz istekler ve bulunamayan kayıtlar için açıklayıcı JSON yanıtları verme.
+
+## Veri modeli
+
+Her görev `id`, `title`, `description`, `status`, `priority`, `assignee`,
+`createdAt` ve `updatedAt` alanlarından oluşur. `id` ve tarihler sunucu tarafından
+üretilir. Kimlikler `1, 2, 3` şeklinde artan tam sayılardır. Son kullanılan kimlik
+ayrı bir sayaç dosyasında korunur. Başlık zorunludur. Durum `pending`, `in_progress` veya `completed`;
+öncelik `low`, `medium` veya `high` olabilir. Varsayılan durum `pending`,
+varsayılan öncelik `medium` değeridir. Sorumlu kişi, adıyla saklanır.
+
+## Teknik tasarım ve API
+
+Backend, Node.js üzerinde Express ile çalışır. Routing, controller, veri saklama
+ve middleware ayrı dosyalarda tutulur. Veriler `data/tasks.json` dosyasına
+kaydedilir. Bu yaklaşım tek süreçte çalışan küçük ölçekli bir eğitim projesi
+için seçilmiştir.
+
+| Metot | Endpoint | Açıklama |
+| --- | --- | --- |
+| POST | `/tasks` | Yeni görev oluşturur; 201 döndürür |
+| GET | `/tasks` | Görev listesini döndürür; 200 döndürür |
+| GET | `/tasks/:id` | Görev detayını döndürür; 200 döndürür |
+| PUT | `/tasks/:id` | Gönderilen alanları günceller; 200 döndürür |
+| DELETE | `/tasks/:id` | Görevi siler; gövdesiz 204 döndürür |
+
+Logger, JSON ayrıştırıcısından önce çalışır; böylece bozuk JSON içeren istekler
+de kaydedilir. Hata middleware'i, beklenmeyen hatalarda ayrıntıları terminale
+yazar ve istemciye 500 durum koduyla genel bir hata mesajı gönderir.
+
+## Test yaklaşımı ve kapsam
+
+Otomatik testler temel CRUD akışını, verilerin yeniden açılışta korunmasını,
+geçersiz verileri, bulunamayan kayıtları, JSON hatalarını, logger davranışını ve
+eşzamanlı eklemeleri kapsar. Postman masaüstü uygulamasında beş CRUD işlemi ve
+silme sonrası doğrulama çalıştırılmış, 12 kontrolün tamamı başarılı olmuştur.
+Gerçek ekran görüntüleri `docs/screenshots/` klasöründe yer alır.
+
+Bu sürüm görev yönetimine odaklanır. Ön yüz, ayrı kullanıcı/proje CRUD modülleri,
+filtreleme ve raporlama kapsam dışındadır. Çalıştırma adımları README'de,
+Postman test sonuçları ve ekran görüntüsü listesi `docs/screenshots/README.md`
+dosyasında yer alır.

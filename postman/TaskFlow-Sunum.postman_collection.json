@@ -1,0 +1,171 @@
+{
+  "info": {
+    "name": "TaskFlow - Teslim Testleri",
+    "description": "Görev oluşturma, listeleme, detay, güncelleme, silme ve silme sonrası kontrol.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "taskId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "01 - Görev Oluştur",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/tasks",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Duvarı onar\",\n  \"description\": \"Salon duvarındaki çatlakları onar.\",\n  \"status\": \"pending\",\n  \"priority\": \"high\",\n  \"assignee\": \"Hasan\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 201', function () { pm.response.to.have.status(201); });",
+              "const task = pm.response.json();",
+              "pm.test('Gorev olusturuldu', function () { pm.expect(Number.isInteger(task.id)).to.eql(true); pm.expect(task.id).to.be.above(0); pm.expect(task.title).to.eql('Duvarı onar'); pm.expect(task.status).to.eql('pending'); });",
+              "if (pm.response.code === 201 && task.id) pm.collectionVariables.set(\"taskId\", String(task.id));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 - Görevleri Listele",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/tasks"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Olusturulan gorev listede', function () { const tasks = pm.response.json(); pm.expect(tasks).to.be.an('array'); pm.expect(tasks.some(task => task.id === Number(pm.collectionVariables.get('taskId')))).to.eql(true); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 - Görev Detayı",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/tasks/{{taskId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Dogru gorev getirildi', function () { pm.expect(pm.response.json().id).to.eql(Number(pm.collectionVariables.get('taskId'))); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 - Görevi Güncelle",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/tasks/{{taskId}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"status\": \"completed\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Durum guncellendi', function () { const task = pm.response.json(); pm.expect(task.status).to.eql('completed'); pm.expect(task.title).to.eql('Duvarı onar'); pm.expect(task.id).to.eql(Number(pm.collectionVariables.get('taskId'))); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 - Görevi Sil",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": "{{baseUrl}}/tasks/{{taskId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 204', function () { pm.response.to.have.status(204); });",
+              "pm.test('Silme yaniti bos', function () { pm.expect(pm.response.text()).to.eql(''); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "06 - Silmeyi Doğrula",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/tasks/{{taskId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 404', function () { pm.response.to.have.status(404); });",
+              "pm.test('Gorev bulunamadi', function () { pm.expect(pm.response.json().message).to.eql('Görev bulunamadı.'); });"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
